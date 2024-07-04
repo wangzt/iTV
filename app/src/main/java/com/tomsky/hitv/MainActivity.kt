@@ -243,10 +243,14 @@ class MainActivity: FragmentActivity(), TVSelectListener {
     private fun hideControlView() {
         binding.chanelControl.clearSelect()
         binding.channelContainer.visibility = View.INVISIBLE
+        binding.playerView.isFocusable = true
+        binding.playerView.requestFocus()
     }
 
     private fun showControlView() {
         binding.channelContainer.visibility = View.VISIBLE
+        binding.channelContainer.requestFocus()
+        binding.playerView.isFocusable = false
         val index = viewModel.getIndex()
         if (index[0] > -1) {
             binding.chanelControl.scrollToSelect(binding.channelContainer,index[0], index[1])

@@ -45,6 +45,13 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
         scrollView.scrollTo(0, tittleView.top)
         recyclerView.scrollToPosition(chanelIndex)
         adapter.updateSelect(chanelIndex)
+
+
+        // 延迟请求焦点，确保滚动完成
+        recyclerView.postDelayed({
+            val viewHolder = recyclerView.findViewHolderForAdapterPosition(chanelIndex)
+            viewHolder?.itemView?.requestFocus()
+        }, 100)
     }
 
     private fun addTVCategory(index: Int, category: TVCategoryBean, listener: TVSelectListener) {
@@ -76,6 +83,8 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
         private var selectIndex = -1
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TVViewHolder {
             val binding = TvItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            binding.root.isFocusable = true
+            binding.root.isFocusableInTouchMode = true
             val viewHolder = TVViewHolder(binding, listener)
             return viewHolder
         }
