@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,10 +21,30 @@ import com.tomsky.hitv.databinding.TvItemBinding
 
 class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(context, attrs) {
 
+    private val titleViews = ArrayList<TextView>()
+    private val recyclerViews = ArrayList<RecyclerView>()
+    private val adapters = ArrayList<TVAdapter>()
+
     fun update(list: List<TVCategoryBean>, listener: TVSelectListener) {
+        titleViews.clear()
+        recyclerViews.clear()
+        adapters.clear()
         list.forEachIndexed { index, tvCategoryBean ->
             addTVCategory(index, tvCategoryBean, listener)
         }
+    }
+
+    fun clearSelect() {
+        adapters.forEachIndexed { _, tvAdapter -> tvAdapter.clearSelect() }
+    }
+
+    fun scrollToSelect(scrollView: ScrollView, cateIndex: Int, chanelIndex: Int) {
+        val tittleView = titleViews[cateIndex]
+        val recyclerView = recyclerViews[cateIndex]
+        val adapter = adapters[cateIndex]
+        scrollView.scrollTo(0, tittleView.top)
+        recyclerView.scrollToPosition(chanelIndex)
+        adapter.updateSelect(chanelIndex)
     }
 
     private fun addTVCategory(index: Int, category: TVCategoryBean, listener: TVSelectListener) {
@@ -44,10 +65,15 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
         recyclerView.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         recyclerView.isFocusable = true
         recyclerView.isFocusableInTouchMode = true
+
+        titleViews.add(titleView)
+        recyclerViews.add(recyclerView)
+        adapters.add(adapter)
     }
 
     inner class TVAdapter(private val cateIndex: Int, private val items: ArrayList<TVBean>, private val listener: TVSelectListener): RecyclerView.Adapter<TVViewHolder>() {
 
+        private var selectIndex = -1
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TVViewHolder {
             val binding = TvItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             val viewHolder = TVViewHolder(binding, listener)
@@ -59,16 +85,26 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
         }
 
         override fun onBindViewHolder(holder: TVViewHolder, position: Int) {
-            holder.update(cateIndex, position, items[position])
+            holder.update(cateIndex, position, selectIndex==position, items[position])
         }
 
+        fun updateSelect(chanelIndex: Int) {
+            selectIndex = chanelIndex
+            notifyDataSetChanged()
+        }
+
+        fun clearSelect() {
+            selectIndex = -1
+            notifyDataSetChanged()
+        }
     }
 
     inner class TVViewHolder(val binding: TvItemBinding, val listener: TVSelectListener): RecyclerView.ViewHolder(binding.root) {
 
-        fun update(cateIndex: Int, chanelIndex:Int, tvBean: TVBean) {
+        fun update(cateIndex: Int, chanelIndex:Int, select: Boolean, tvBean: TVBean) {
             Log.i("hitv-logo", "name:${tvBean.display}, logo:${tvBean.logo}")
             Glide.with(context).load(tvBean.logo).into(binding.tvLogo)
+            binding.root.isSelected = select
             binding.tvName.text = tvBean.display
             binding.root.setOnClickListener {
                 listener.onSelect(cateIndex, chanelIndex, tvBean)

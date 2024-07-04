@@ -73,7 +73,7 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 
     private fun initView() {
         binding.chanelControl.setOnClickListener {
-            binding.channelContainer.visibility = View.INVISIBLE
+            hideControlView()
         }
         binding.playerView.run {
             isFocusable = true
@@ -90,6 +90,13 @@ class MainActivity: FragmentActivity(), TVSelectListener {
                             showNext()
                             true
                         }
+                        // ok 按键
+                        KeyEvent.KEYCODE_ENTER,
+                        KeyEvent.KEYCODE_DPAD_CENTER -> {
+                            showControlView()
+                            true
+                        }
+
                         else -> false
                     }
                 }
@@ -105,7 +112,7 @@ class MainActivity: FragmentActivity(), TVSelectListener {
                 }
 
                 override fun onClick() {
-                    binding.channelContainer.visibility = View.VISIBLE
+                    showControlView()
                 }
 
             })
@@ -233,9 +240,22 @@ class MainActivity: FragmentActivity(), TVSelectListener {
         }
     }
 
+    private fun hideControlView() {
+        binding.chanelControl.clearSelect()
+        binding.channelContainer.visibility = View.INVISIBLE
+    }
+
+    private fun showControlView() {
+        binding.channelContainer.visibility = View.VISIBLE
+        val index = viewModel.getIndex()
+        if (index[0] > -1) {
+            binding.chanelControl.scrollToSelect(binding.channelContainer,index[0], index[1])
+        }
+    }
+
     override fun onSelect(cateIndex: Int, chanelIndex: Int, tvBean: TVBean) {
         viewModel.saveIndex(cateIndex, chanelIndex)
-        binding.channelContainer.visibility = View.INVISIBLE
+        hideControlView()
         binding.playerView.player?.run {
             setMediaItem(MediaItem.fromUri(tvBean.url!!))
             prepare()
@@ -262,7 +282,7 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 
     override fun onBackPressed() {
         if (binding.channelContainer.visibility == View.VISIBLE) {
-            binding.channelContainer.visibility = View.INVISIBLE
+            hideControlView()
             return
         }
         super.onBackPressed()
