@@ -19,3 +19,23 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Glide 4.12.0 rules
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.resource.bitmap.ImageHeaderParser$**
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$**
+-keepclassmembers class com.bumptech.glide.RequestManager { <methods>; }
+-keep class com.bumptech.glide.** { *; }
+-keep class * extends com.bumptech.glide.load.Key { *; }
+-keepclassmembers class * extends com.bumptech.glide.load.Key { *; }
+-keep class * implements com.bumptech.glide.load.ResourceDecoder { *; }
+-keep class * implements com.bumptech.glide.load.resource.transcode.ResourceTranscoder { *; }
+-keep class * implements com.bumptech.glide.load.model.ModelLoader { *; }
+-keep class * extends com.bumptech.glide.load.model.ModelLoader { *; }
+-keep class * extends com.bumptech.glide.load.data.DataFetcher { *; }
+-keep class * extends com.bumptech.glide.load.resource.drawable.DrawableResource { *; }
+
+-keep class * extends android.graphics.drawable.Drawable { *; }
+-keep class * extends android.graphics.Bitmap { *; }
+-keep class * extends android.graphics.drawable.BitmapDrawable { *; }
