@@ -9,6 +9,15 @@ android {
     namespace = "com.tomsky.hitv"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            keyAlias = "hitv"
+            keyPassword = "tomsky"
+            storeFile = file("itv.keystore")
+            storePassword = "tomsky"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.tomsky.hitv"
         minSdk = 23
@@ -25,6 +34,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
