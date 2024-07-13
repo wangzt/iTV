@@ -12,6 +12,8 @@ import android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
 import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -117,10 +119,15 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 
             })
 
+            val audioAttributes: AudioAttributes = AudioAttributes.Builder()
+                .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE) // 设置内容类型为音乐
+                .setUsage(C.USAGE_MEDIA) // 设置用途为媒体播放
+                .build()
 
             player =
                 ExoPlayer.Builder(this@MainActivity)
 //                        .setRenderersFactory(renderersFactory!!)
+                    .setAudioAttributes(audioAttributes, true)
                     .build()
 
             player?.playWhenReady = true

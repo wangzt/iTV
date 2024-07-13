@@ -1,5 +1,6 @@
 package com.tomsky.hitv.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
@@ -7,6 +8,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
@@ -85,6 +87,7 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
             val binding = TvItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             binding.root.isFocusable = true
             binding.root.isFocusableInTouchMode = true
+            binding.root.isClickable = true
             val viewHolder = TVViewHolder(binding, listener)
             return viewHolder
         }
@@ -110,11 +113,21 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
 
     inner class TVViewHolder(val binding: TvItemBinding, val listener: TVSelectListener): RecyclerView.ViewHolder(binding.root) {
 
+        @SuppressLint("ClickableViewAccessibility")
         fun update(cateIndex: Int, chanelIndex:Int, select: Boolean, tvBean: TVBean) {
             Log.i("hitv-logo", "name:${tvBean.display}, logo:${tvBean.logo}")
             Glide.with(context).load(tvBean.logo).into(binding.tvLogo)
             binding.root.isSelected = select
             binding.tvName.text = tvBean.display
+            // 这个是为了避免在手机上需要点击两次的问题，获取焦点会消耗一次
+            binding.root.setOnTouchListener { v, event ->
+                if (event.action == MotionEvent.ACTION_UP) {
+//                    if (v.isFocused) {
+                        v.performClick()
+//                    }
+                }
+                false
+            }
             binding.root.setOnClickListener {
                 listener.onSelect(cateIndex, chanelIndex, tvBean)
             }
