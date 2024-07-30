@@ -8,6 +8,7 @@ object SP {
 
     private const val KEY_IPTV_CACHE = "key_iptv_cache"
     private const val KEY_IPTV_INDEX = "key_iptv_index"
+    private const val KEY_IPTV_VERSION = "key_iptv_version"
 
     private lateinit var sp: SharedPreferences
 
@@ -31,4 +32,11 @@ object SP {
     var tvIndex: String
         get() = sp.getString(KEY_IPTV_INDEX, "") ?: ""
         set(value) = sp.edit().putString(KEY_IPTV_INDEX, value).apply()
+
+    /**
+     * tv version
+     */
+    var tvVersion: Int
+        get() = sp.getInt(KEY_IPTV_VERSION, 0)
+        set(value) = sp.edit().putInt(KEY_IPTV_VERSION, value).apply()
 }

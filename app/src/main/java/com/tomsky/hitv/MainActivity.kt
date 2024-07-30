@@ -77,6 +77,9 @@ class MainActivity: FragmentActivity(), TVSelectListener {
         binding.chanelControl.setOnClickListener {
             hideControlView()
         }
+        binding.liveClose.setOnClickListener {
+            finish()
+        }
         binding.playerView.run {
             isFocusable = true
             isFocusableInTouchMode = true

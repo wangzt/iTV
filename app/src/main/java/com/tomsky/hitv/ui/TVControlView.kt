@@ -74,6 +74,7 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
         recyclerView.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         recyclerView.isFocusable = true
         recyclerView.isFocusableInTouchMode = true
+        recyclerView.setHasFixedSize(true)
 
         titleViews.add(titleView)
         recyclerViews.add(recyclerView)

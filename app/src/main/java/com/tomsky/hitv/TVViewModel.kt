@@ -21,6 +21,7 @@ class TVViewModel:ViewModel() {
 
     companion object {
         const val INVALID_INDEX = -1
+        const val VERSION = 2
     }
 
     private val tvCategoryMap = HashMap<String, TVCategoryBean>()
@@ -45,8 +46,9 @@ class TVViewModel:ViewModel() {
         cateIndex = INVALID_INDEX
         chanelIndex = INVALID_INDEX
 
+        SP.tvVersion
         val cacheIPTV = SP.iptv
-        if (!TextUtils.isEmpty(cacheIPTV)) {
+        if (!TextUtils.isEmpty(cacheIPTV) && SP.tvVersion >= VERSION) {
             val categoryList = JSONUtils.fromJsonArray(Array<TVCategoryBean>::class.java, cacheIPTV)
             if (categoryList != null && categoryList.size > 0) {
                 categoryList.forEachIndexed { _, tvCategoryBean ->
@@ -126,6 +128,7 @@ class TVViewModel:ViewModel() {
                 if (cateSize > 0) {
                     val jsonStr = JSONUtils.toJson(tvCategoryList)
                     SP.iptv = jsonStr
+                    SP.tvVersion = VERSION
                     Log.i(TAG, "from origin,size:${tvCategoryList.size}, json:$jsonStr")
                 }
                 bufferedReader.close()
