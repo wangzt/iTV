@@ -37,6 +37,7 @@
         android:id="@+id/live_close"
         android:layout_width="28dp"
         android:layout_height="28dp"
+        android:visibility="gone"
         android:src="@drawable/common_icon_live_closed_n"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="5dp"
