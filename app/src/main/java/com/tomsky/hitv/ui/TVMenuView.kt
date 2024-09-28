@@ -40,7 +40,8 @@ class TVMenuView (context: Context, attrs: AttributeSet?): RelativeLayout(contex
         if (show) {
             val version = SP.tvVersion
             binding.tvVersion.text = "当前版本: ${version}"
-            clearFocus()
+        } else {
+            binding.tvMenuRecyclerview.clearFocus()
         }
         visibility = if (show) View.VISIBLE else View.GONE
     }

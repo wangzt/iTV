@@ -320,9 +320,13 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 
     private fun showMenu() {
         binding.liveMenu.show(true)
+        binding.liveMenu.requestFocus()
+        binding.playerView.isFocusable = false
     }
     private fun hideMenu() {
         binding.liveMenu.show(false)
+        binding.playerView.isFocusable = true
+        binding.playerView.requestFocus()
     }
 
     private fun hideControlView() {
