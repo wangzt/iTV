@@ -31,7 +31,7 @@ class TVViewModel:ViewModel() {
 
     companion object {
         const val INVALID_INDEX = -1
-        const val VERSION = 4
+        const val VERSION = 5
     }
 
     private val tvCategoryMap = HashMap<String, TVCategoryBean>()
