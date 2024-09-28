@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="android.widget.RelativeLayout"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#4cffffff"
+        android:gravity="center"
+        android:textColor="#54D5FF"
+        android:textSize="20dp"
+        android:text="设置"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/tv_menu_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#1dffffff"
+        android:layout_marginTop="50dp"
+        android:layout_marginBottom="50dp"/>
+    <TextView
+        android:id="@+id/tv_version"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:paddingStart="20dp"
+        android:background="#1dffffff"
+        android:textSize="18dp"
+        android:textColor="@color/white"
+        android:gravity="center_vertical"
+        tools:text="当前版本:4"
+        android:layout_alignParentBottom="true"/>
+</merge>

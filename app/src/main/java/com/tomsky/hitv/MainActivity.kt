@@ -1,5 +1,6 @@
 package com.tomsky.hitv
 
+import android.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -10,7 +11,10 @@ import android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
 import android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 import android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
 import android.view.WindowManager
+import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -19,18 +23,25 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
+import com.tomsky.hitv.data.CheckType
 import com.tomsky.hitv.data.TVBean
+import com.tomsky.hitv.data.TVMenuAction
+import com.tomsky.hitv.data.TVMenuItem
 import com.tomsky.hitv.databinding.ActivityMainBinding
+import com.tomsky.hitv.ui.TVMenuSelectListener
 import com.tomsky.hitv.ui.TVSelectListener
 import com.tomsky.hitv.ui.TVSwipeListener
 import com.tomsky.hitv.util.AppEnv
 import com.tomsky.hitv.util.SP
+import com.tomsky.hitv.util.showToast
 
 
 class MainActivity: FragmentActivity(), TVSelectListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: TVViewModel
+
+    private var loadingDialog:AlertDialog? = null
 
     private val aspectRatio = 16f / 9f
 
@@ -74,11 +85,31 @@ class MainActivity: FragmentActivity(), TVSelectListener {
     }
 
     private fun initView() {
+        binding.liveMenu.initView(object :TVMenuSelectListener {
+            override fun onSelect(tvBean: TVMenuItem) {
+                when (tvBean.action) {
+                    TVMenuAction.UPDATE_DATA.ordinal -> {
+                        hideMenu()
+                        showLoading()
+                        viewModel.checkVersion(this@MainActivity)
+                    }
+                    TVMenuAction.CLOSE.ordinal -> {
+                        hideMenu()
+                        finish()
+                    }
+                    else -> {
+
+                    }
+                }
+            }
+
+        })
         binding.chanelControl.setOnClickListener {
             hideControlView()
         }
-        binding.liveClose.setOnClickListener {
-            finish()
+
+        binding.liveSetting.setOnClickListener {
+            showMenu()
         }
         binding.playerView.run {
             isFocusable = true
@@ -98,7 +129,12 @@ class MainActivity: FragmentActivity(), TVSelectListener {
                         // ok 按键
                         KeyEvent.KEYCODE_ENTER,
                         KeyEvent.KEYCODE_DPAD_CENTER -> {
-                            showControlView()
+                            onClickCenter()
+                            true
+                        }
+
+                        KeyEvent.KEYCODE_MENU -> {
+                            showMenu()
                             true
                         }
 
@@ -117,7 +153,7 @@ class MainActivity: FragmentActivity(), TVSelectListener {
                 }
 
                 override fun onClick() {
-                    showControlView()
+                    onClickCenter()
                 }
 
             })
@@ -240,6 +276,14 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 //        })
     }
 
+    private fun onClickCenter() {
+        if (binding.liveMenu.visibility == View.VISIBLE) {
+            hideMenu()
+        } else {
+            showControlView()
+        }
+    }
+
     private fun initData() {
         SP.init(this)
         val data = viewModel.parseData(this)
@@ -248,6 +292,37 @@ class MainActivity: FragmentActivity(), TVSelectListener {
             val index = viewModel.getIndex()
             onSelect(index[0], index[1], data[index[0]].tvList[index[1]])
         }
+
+        viewModel.checkResult.observe(this, Observer{
+            hideLoading()
+            when (it) {
+                CheckType.NONE -> {
+                    showToast(this@MainActivity, "已经是最新数据，不需要更新")
+                }
+                CheckType.SUCCESS -> {
+                    showToast(this@MainActivity, "更新数据成功!")
+                    val newData = viewModel.getData()
+                    binding.chanelControl.update(newData, this)
+                    if (data.isNotEmpty()) {
+                        val index = viewModel.getIndex()
+                        onSelect(index[0], index[1], newData[index[0]].tvList[index[1]])
+                    }
+                }
+                CheckType.FAILED -> {
+                    showToast(this@MainActivity, "更新数据失败!")
+                }
+                else -> {
+
+                }
+            }
+        })
+    }
+
+    private fun showMenu() {
+        binding.liveMenu.show(true)
+    }
+    private fun hideMenu() {
+        binding.liveMenu.show(false)
     }
 
     private fun hideControlView() {
@@ -299,6 +374,10 @@ class MainActivity: FragmentActivity(), TVSelectListener {
             hideControlView()
             return
         }
+        if (binding.liveMenu.visibility == View.VISIBLE) {
+            hideMenu()
+            return
+        }
         super.onBackPressed()
     }
 
@@ -309,6 +388,28 @@ class MainActivity: FragmentActivity(), TVSelectListener {
             Log.i(TAG, "replay")
             binding.playerView.player?.prepare()
             binding.playerView.player?.play()
+        }
+    }
+
+    private fun showLoading() {
+        if (loadingDialog?.isShowing == true) return
+
+        if (loadingDialog == null) {
+            // 使用 LayoutInflater 加载一个自定义的布局
+            val progressBar = ProgressBar(this)
+
+            // 构建 AlertDialog
+            val builder = AlertDialog.Builder(this)
+                .setView(progressBar)  // 将 ProgressBar 作为 View 放入对话框
+                .setCancelable(true)  // 禁止用户点击外部关闭对话框
+            // 创建对话框实例
+            loadingDialog = builder.create()
+        }
+        loadingDialog?.show()
+    }
+    private fun hideLoading() {
+        if (loadingDialog?.isShowing == true) {
+            loadingDialog?.dismiss()
         }
     }
 

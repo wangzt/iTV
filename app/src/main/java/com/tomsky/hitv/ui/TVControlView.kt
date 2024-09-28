@@ -116,7 +116,7 @@ class TVControlView(context: Context, attrs: AttributeSet?): LinearLayout(contex
 
         @SuppressLint("ClickableViewAccessibility")
         fun update(cateIndex: Int, chanelIndex:Int, select: Boolean, tvBean: TVBean) {
-            Log.i("hitv-logo", "name:${tvBean.display}, logo:${tvBean.logo}")
+//            Log.i("hitv-logo", "name:${tvBean.display}, logo:${tvBean.logo}")
             Glide.with(context).load(tvBean.logo).into(binding.tvLogo)
             binding.root.isSelected = select
             binding.tvName.text = tvBean.display

@@ -1,4 +1,4 @@
-FROM --platform=$TARGETPLATFORM alpine:3.14
+FROM alpine:3.14
 
 RUN apk add --no-cache tzdata ca-certificates nginx && rm -rf /var/cache/apk/*
 

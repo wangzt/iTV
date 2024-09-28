@@ -1,15 +1,25 @@
 package com.tomsky.hitv
 
+import RetrofitClient
 import android.content.Context
 import android.text.TextUtils
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.tomsky.hitv.data.CheckType
 import com.tomsky.hitv.data.TVBean
 import com.tomsky.hitv.data.TVCategoryBean
+import com.tomsky.hitv.request.ApiService
 import com.tomsky.hitv.util.FileUtils
 import com.tomsky.hitv.util.JSONUtils
 import com.tomsky.hitv.util.SP
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody
 import java.io.BufferedReader
+import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
 
@@ -27,14 +37,81 @@ class TVViewModel:ViewModel() {
     private val tvCategoryMap = HashMap<String, TVCategoryBean>()
     private val tvCategoryList = ArrayList<TVCategoryBean>()
 
+    val checkResult = MutableLiveData<CheckType>()
+
     private var cateSize = 0
     private var cateIndex = INVALID_INDEX
     private var chanelIndex = INVALID_INDEX
+
+    private val apiService = RetrofitClient.createService(ApiService::class.java)
 
     fun getVideoUrlCurrent(): String {
         return "http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226559/index.m3u8" // cctv 1
 //        return "http://[2409:8087:1a01:df::4077]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226008/index.m3u8"// cctv 8
 //        return "http://[2409:8087:1a01:df::4077]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226010/index.m3u8"// cctv 6
+    }
+
+    fun checkVersion(context: Context) {
+        viewModelScope.launch {
+            var result = CheckType.FAILED
+            try {
+                val tVersion = apiService.getVersion()
+                val version = tVersion.version
+                val localVersion = SP.tvVersion
+                Log.i(TAG, "sever version is:$version, localVersion:$localVersion")
+                if (version > localVersion) {
+                    val tvBody = apiService.getIPTV()
+                    var destPath = saveFile(tvBody, FileUtils.getRootPath(context)+"temp.m3u", FileUtils.getRootPath(context) + fileName, tVersion.md5)
+                    if (destPath != null) {
+                        parseFromFile(destPath)
+                        SP.tvVersion = version
+                        if (cateSize > 0) {
+                            result = CheckType.SUCCESS
+                        }
+                    }
+                } else {
+                    result = CheckType.NONE
+                }
+            } catch (e: Exception) {
+                Log.e(TAG,"version", e)
+            }
+            Log.i(TAG, "check result: $result")
+            checkResult.value = result
+        }
+    }
+
+    fun getData(): List<TVCategoryBean> {
+        return tvCategoryList
+    }
+
+    private suspend fun readFileContent(responseBody: ResponseBody): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 使用 ResponseBody.string() 获取文件内容
+                responseBody.string()
+            } catch (e: Exception) {
+                "0" // 处理错误情况
+            }
+        }
+    }
+
+    private suspend fun saveFile(responseBody: ResponseBody, tempPath: String, destPath: String, md5: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                var finalPath: String? = null
+                FileUtils.saveFile(responseBody, tempPath)
+                val fileMd5 = FileUtils.calculateMD5(File(tempPath))
+                if (md5 == fileMd5) {
+                    if (File(tempPath).renameTo(File(destPath))) {
+                        finalPath = destPath
+                    }
+                }
+                // 使用 ResponseBody.string() 获取文件内容
+                finalPath
+            } catch (e: Exception) {
+                null // 处理错误情况
+            }
+        }
     }
 
     fun getVolume():Float {
@@ -65,79 +142,83 @@ class TVViewModel:ViewModel() {
         }
         var destPath = FileUtils.getRootPath(context) + fileName
         if (FileUtils.copyAssetToFile(context, fileName, destPath)) {
-            try {
-                tvCategoryList.clear()
-                tvCategoryMap.clear()
+            parseFromFile(destPath)
+        }
+        return tvCategoryList
+    }
 
-                val inputStreamReader = InputStreamReader(FileInputStream(destPath))
-                val bufferedReader = BufferedReader(inputStreamReader)
-                var line: String? = ""
-                var tvBean: TVBean? = null
-                while ((bufferedReader.readLine().also { line = it }) != null) {
-                    line?.let {
-                        if (it.startsWith("#EXTINF:")) {
-                            tvBean = TVBean()
-                            val dotList = it.split(",")
-                            val dotSize = dotList.size
-                            if (dotSize > 1) {
-                                tvBean?.display = dotList[1].trim()
-                            }
-                            if (dotSize > 0) {
-                                val blankList = dotList[0].split(" ")
-                                blankList.forEachIndexed { index, s ->
-                                    val bStr = s.trim()
-                                    val eIndex = bStr.indexOf("=")
-                                    if (eIndex > 0) {
-                                        val key = bStr.substring(0, eIndex)
-                                        val value = bStr.substring(eIndex+1, bStr.length).replace("\"","")
-                                        if ("tvg-id" == key) {
-                                            tvBean?.id = value
-                                        } else if ("tvg-name" == key) {
-                                            tvBean?.name = value
-                                        } else if ("tvg-logo" == key) {
-                                            tvBean?.logo = value
-                                        } else if ("group-title" == key) {
-                                            tvBean?.group = value
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            if (tvBean != null && tvBean?.group != null) {
-                                val group = tvBean?.group!!
-                                val url = it.trim()
-                                if (!TextUtils.isEmpty(url) && isIPV6(url)) {
-                                    tvBean?.url = url
-                                    var tvCategory = tvCategoryMap[group]
-                                    if (tvCategory == null) {
-                                        var tvList = ArrayList<TVBean>()
-                                        tvList.add(tvBean!!)
-                                        tvCategory = TVCategoryBean(group, tvList)
-                                        tvCategoryMap[group] = tvCategory
-                                        tvCategoryList.add(tvCategory)
-                                    } else {
-                                        tvCategory.tvList.add(tvBean!!)
+    private fun parseFromFile(destPath: String) {
+        try {
+            tvCategoryList.clear()
+            tvCategoryMap.clear()
+
+            val inputStreamReader = InputStreamReader(FileInputStream(destPath))
+            val bufferedReader = BufferedReader(inputStreamReader)
+            var line: String? = ""
+            var tvBean: TVBean? = null
+            while ((bufferedReader.readLine().also { line = it }) != null) {
+                line?.let {
+                    if (it.startsWith("#EXTINF:")) {
+                        tvBean = TVBean()
+                        val dotList = it.split(",")
+                        val dotSize = dotList.size
+                        if (dotSize > 1) {
+                            tvBean?.display = dotList[1].trim()
+                        }
+                        if (dotSize > 0) {
+                            val blankList = dotList[0].split(" ")
+                            blankList.forEachIndexed { index, s ->
+                                val bStr = s.trim()
+                                val eIndex = bStr.indexOf("=")
+                                if (eIndex > 0) {
+                                    val key = bStr.substring(0, eIndex)
+                                    val value = bStr.substring(eIndex+1, bStr.length).replace("\"","")
+                                    if ("tvg-id" == key) {
+                                        tvBean?.id = value
+                                    } else if ("tvg-name" == key) {
+                                        tvBean?.name = value
+                                    } else if ("tvg-logo" == key) {
+                                        tvBean?.logo = value
+                                    } else if ("group-title" == key) {
+                                        tvBean?.group = value
                                     }
                                 }
                             }
                         }
+                    } else {
+                        if (tvBean != null && tvBean?.group != null) {
+                            val group = tvBean?.group!!
+                            val url = it.trim()
+                            if (!TextUtils.isEmpty(url) && isIPV6(url)) {
+                                tvBean?.url = url
+                                var tvCategory = tvCategoryMap[group]
+                                if (tvCategory == null) {
+                                    var tvList = ArrayList<TVBean>()
+                                    tvList.add(tvBean!!)
+                                    tvCategory = TVCategoryBean(group, tvList)
+                                    tvCategoryMap[group] = tvCategory
+                                    tvCategoryList.add(tvCategory)
+                                } else {
+                                    tvCategory.tvList.add(tvBean!!)
+                                }
+                            }
+                        }
                     }
+                }
 
-                }
-                cateSize = tvCategoryList.size
-                if (cateSize > 0) {
-                    val jsonStr = JSONUtils.toJson(tvCategoryList)
-                    SP.iptv = jsonStr
-                    SP.tvVersion = VERSION
-                    Log.i(TAG, "from origin,size:${tvCategoryList.size}, json:$jsonStr")
-                }
-                bufferedReader.close()
-                inputStreamReader.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+            cateSize = tvCategoryList.size
+            if (cateSize > 0) {
+                val jsonStr = JSONUtils.toJson(tvCategoryList)
+                SP.iptv = jsonStr
+                SP.tvVersion = VERSION
+                Log.i(TAG, "from origin,size:${tvCategoryList.size}, json:$jsonStr")
+            }
+            bufferedReader.close()
+            inputStreamReader.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        return tvCategoryList
     }
 
     fun saveIndex(category: Int, chanel: Int) {

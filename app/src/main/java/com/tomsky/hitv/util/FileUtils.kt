@@ -1,11 +1,13 @@
 package com.tomsky.hitv.util
 
 import android.content.Context
+import okhttp3.ResponseBody
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.security.MessageDigest
 
 object FileUtils {
     private var BASE_ROOT_PATH: String? = null
@@ -131,5 +133,53 @@ object FileUtils {
             }
         }
         return isOk
+    }
+
+    // Function to save the downloaded file
+    fun saveFile(responseBody: ResponseBody, filePath: String): String? {
+        return try {
+
+            var inputStream: InputStream? = null
+            var outputStream: FileOutputStream? = null
+
+            try {
+                inputStream = responseBody.byteStream()
+                outputStream = FileOutputStream(filePath)
+
+                val buffer = ByteArray(4096)
+                var bytesRead: Int
+
+                // 逐块读取文件流
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    outputStream.write(buffer, 0, bytesRead)
+                }
+
+                outputStream.flush()
+                filePath // 文件保存成功，返回文件路径
+            } catch (e: Exception) {
+                null // 处理失败情况
+            } finally {
+                inputStream?.close()
+                outputStream?.close()
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun calculateMD5(file: File): String {
+        return file.inputStream().use { inputStream ->
+            val digest = MessageDigest.getInstance("MD5")
+            val bytes = ByteArray(1024)
+            var length: Int
+            while (inputStream.read(bytes).also { length = it } != -1) {
+                digest.update(bytes, 0, length)
+            }
+            digest.digest().let { md ->
+                md.fold("") { str, it ->
+                    str + "%02x".format(it)
+                }
+            }
+        }
     }
 }
