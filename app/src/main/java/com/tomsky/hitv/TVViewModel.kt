@@ -101,7 +101,7 @@ class TVViewModel:ViewModel() {
                 var finalPath: String? = null
                 FileUtils.saveFile(responseBody, tempPath)
                 val fileMd5 = FileUtils.calculateMD5(File(tempPath))
-                if (md5 == fileMd5) {
+                if (md5.lowercase() == fileMd5.lowercase()) {
                     if (File(tempPath).renameTo(File(destPath))) {
                         finalPath = destPath
                     }
