@@ -201,7 +201,7 @@ class MainActivity: FragmentActivity(), TVSelectListener {
 
                 override fun onPlayerError(error: PlaybackException) {
                     super.onPlayerError(error)
-                    Log.e(TAG, "PlaybackException $error")
+                    Log.e(TAG, "PlaybackException ${error.errorCode}, ${error.errorCodeName}")
                     val err = "播放错误"
                     showToast(this@MainActivity, "播放失败:${error.errorCodeName}")
 //                        tvViewModel?.setErrInfo(err)
